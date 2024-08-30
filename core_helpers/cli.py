@@ -1,0 +1,60 @@
+"""Command-line interface helper functions."""
+
+from argparse import ArgumentParser
+from typing import Any
+
+from rich_argparse_plus import RichHelpFormatterPlus  # type: ignore
+
+
+def get_parser(
+    package: str, description: str, version: str
+) -> tuple[ArgumentParser, Any]:
+    """
+    Create a parser with the default command-line arguments.
+
+    Returns:
+        tuple[ArgumentParser, Any]: The parser and the main group.
+    """
+    parser = ArgumentParser(
+        description=description,  # Program description
+        formatter_class=RichHelpFormatterPlus,  # Disable line wrapping
+        allow_abbrev=False,  # Disable abbreviations
+        add_help=False,  # Disable default help
+    )
+
+    g_main = parser.add_argument_group("Main Options")
+    # Add arguments in the main group later
+
+    g_misc = parser.add_argument_group("Miscellaneous Options")
+    # Help
+    g_misc.add_argument(
+        "-h", "--help", action="help", help="Show this help message and exit."
+    )
+    # Verbose
+    g_misc.add_argument(
+        "-v",
+        "--verbose",
+        dest="verbose",
+        action="store_true",
+        default=False,
+        help="Show log messages on screen. Default is False.",
+    )
+    # Debug
+    g_misc.add_argument(
+        "-d",
+        "--debug",
+        dest="debug",
+        action="store_true",
+        default=False,
+        help="Activate debug logs. Default is False.",
+    )
+    # Version
+    g_misc.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        help="Show version number and exit.",
+        version=f"[argparse.prog]{package}[/] version [i]{version}[/]",
+    )
+
+    return parser, g_main
