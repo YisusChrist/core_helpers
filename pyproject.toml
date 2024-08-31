@@ -14,9 +14,15 @@ packaging = "^24.1"
 requests = "^2.32.3"
 rich = "^13.7.1"
 rich-argparse-plus = "^0.3.1.4"
+typeguard = "^4.3.0"
 
 [tool.poetry.group.dev.dependencies]
 types-requests = "^2.32.0.20240712"
+pylint = "^3.2.6"
+mypy = "^1.11.2"
+bandit = "^1.7.9"
+pydoctest = "^0.2.1"
+pytest = "^8.3.2"
 
 [build-system]
 requires = ["poetry-core"]
