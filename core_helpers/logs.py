@@ -1,32 +1,40 @@
 """Logging configuration."""
 
 import logging
+from pathlib import Path
 
 import loguru
 from loguru import logger as loguru_logger
+from typeguard import typechecked
 
 # Cache the logger instance
 _cached_logger: logging.Logger | loguru._Logger = None  # type: ignore
 
 
+@typechecked
 def setup_logger(
-    package: str, log_file: str, debug: bool = False, use_loguru: bool = False
+    package: str,
+    log_file: str | Path,
+    debug: bool = False,
+    use_loguru: bool = False,
+    no_cache: bool = False,
 ) -> logging.Logger | loguru._Logger:  # type: ignore
     """
     Set up and return a configured logger instance using either `logging` or `loguru`.
 
     Args:
         package (str): The name of the package or project.
-        log_file (str): The path to the log file.
+        log_file (str | Path): The path to the log file.
         debug (bool): Whether to enable debug-level logging.
         use_loguru (bool): Whether to use `loguru` instead of the standard `logging` module.
+        no_cache (bool): Whether to bypass the cached logger instance.
 
     Returns:
         Optional[logging.Logger]: The configured logger instance (only if using `logging`).
     """
     global _cached_logger
 
-    if _cached_logger is not None:
+    if _cached_logger is not None and not no_cache:
         return _cached_logger
 
     if use_loguru:
@@ -50,6 +58,9 @@ def setup_logger(
     else:
         # Standard logging configuration
         logger: logging.Logger = logging.getLogger(name=package)
+        if logger.hasHandlers() and no_cache:
+            # Remove existing handlers
+            logger.handlers.clear()
 
         if not logger.hasHandlers():  # Prevent adding handlers multiple times
             # Define log handlers
