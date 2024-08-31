@@ -6,7 +6,7 @@ from typing import Any
 from rich_argparse_plus import RichHelpFormatterPlus  # type: ignore
 
 
-def get_parser(
+def setup_parser(
     package: str, description: str, version: str
 ) -> tuple[ArgumentParser, Any]:
     """
