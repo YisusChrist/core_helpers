@@ -65,12 +65,20 @@ def setup_logger(
             if debug:
                 log_format += ": %(pathname)s:%(lineno)d in %(funcName)s"
 
-            # Configure the logging system
-            logging.basicConfig(
-                level=log_level,
-                format=log_format,
-                handlers=log_handlers,
-            )
+            formatter = logging.Formatter(log_format)
+
+            # Clear existing handlers
+            if logger.hasHandlers():
+                logger.handlers.clear()
+
+            # Set the log level
+            logger.setLevel(log_level)
+
+            # Add handlers to the logger
+            for handler in log_handlers:
+                handler.setFormatter(formatter)
+                handler.setLevel(log_level)
+                logger.addHandler(handler)
 
         _cached_logger = logger
         return logger
