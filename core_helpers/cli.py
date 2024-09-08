@@ -1,19 +1,18 @@
 """Command-line interface helper functions."""
 
-from argparse import ArgumentParser
-from typing import Any
+from argparse import ArgumentParser, _ArgumentGroup
 
 from rich_argparse_plus import RichHelpFormatterPlus  # type: ignore
 
 
 def setup_parser(
     package: str, description: str, version: str
-) -> tuple[ArgumentParser, Any]:
+) -> tuple[ArgumentParser, _ArgumentGroup]:
     """
     Create a parser with the default command-line arguments.
 
     Returns:
-        tuple[ArgumentParser, Any]: The parser and the main group.
+        tuple[ArgumentParser, _ArgumentGroup]: The parser and the main group.
     """
     parser = ArgumentParser(
         description=description,  # Program description
@@ -22,16 +21,16 @@ def setup_parser(
         add_help=False,  # Disable default help
     )
 
-    g_main = parser.add_argument_group("Main Options")
+    main_group: _ArgumentGroup = parser.add_argument_group("Main Options")
     # Add arguments in the main group later
 
-    g_misc = parser.add_argument_group("Miscellaneous Options")
+    misc_group: _ArgumentGroup = parser.add_argument_group("Miscellaneous Options")
     # Help
-    g_misc.add_argument(
+    misc_group.add_argument(
         "-h", "--help", action="help", help="Show this help message and exit."
     )
     # Verbose
-    g_misc.add_argument(
+    misc_group.add_argument(
         "-v",
         "--verbose",
         dest="verbose",
@@ -40,7 +39,7 @@ def setup_parser(
         help="Show log messages on screen. Default is False.",
     )
     # Debug
-    g_misc.add_argument(
+    misc_group.add_argument(
         "-d",
         "--debug",
         dest="debug",
@@ -49,7 +48,7 @@ def setup_parser(
         help="Activate debug logs. Default is False.",
     )
     # Version
-    g_misc.add_argument(
+    misc_group.add_argument(
         "-V",
         "--version",
         action="version",
@@ -57,4 +56,4 @@ def setup_parser(
         version=f"[argparse.prog]{package}[/] version [i]{version}[/]",
     )
 
-    return parser, g_main
+    return parser, main_group
