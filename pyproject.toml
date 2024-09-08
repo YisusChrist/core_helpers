@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "core-helpers"
-version = "0.1.0"
+version = "1.0.0"
 description = "A collection of helper functions for all your python projects"
 license = "GPL-3.0-only"
 authors = ["YisusChrist <alejandro.gonzalezm02@estudiante.uam.es>"]
