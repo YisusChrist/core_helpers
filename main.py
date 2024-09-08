@@ -1,12 +1,13 @@
-from argparse import Namespace
 import itertools
 import logging
-from core_helpers.cli import setup_parser
+from argparse import Namespace
+
+from rich import print
+from rich.traceback import install
+
+from core_helpers.cli import ArgparseColorThemes, setup_parser
 from core_helpers.logs import setup_logger
 from core_helpers.updates import check_updates
-
-from rich.traceback import install
-from rich import print
 
 
 def create_logger(package, log_file, debug, use_loguru) -> None:
@@ -38,11 +39,11 @@ def create_logger(package, log_file, debug, use_loguru) -> None:
 
 
 def test_logger() -> None:
-    package = ""
+    package = "MyApp"
     log_file = "myapp.log"
 
-    create_logger(None, log_file, True, False)
-    create_logger(None, log_file, False, False)
+    create_logger(package, log_file, True, False)
+    create_logger(package, log_file, False, False)
 
     return
 
@@ -55,6 +56,7 @@ def test_parser() -> Namespace:
         "MyApp",
         "MyApp description",
         "1.0.0",
+        theme=ArgparseColorThemes.LILAC,
     )
 
     g_main.add_argument(
@@ -89,10 +91,11 @@ def test_updates() -> None:
     for url in urls:
         print(f"Checking updates for {url}...")
         check_updates(url, "0.0.1")
+        print()
 
 
 def main() -> None:
-    install(show_locals=True)
+    install(show_locals=False)
 
     args: Namespace = test_parser()
 
