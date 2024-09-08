@@ -8,6 +8,12 @@ from rich.traceback import install
 from core_helpers.cli import ArgparseColorThemes, setup_parser
 from core_helpers.logs import setup_logger
 from core_helpers.updates import check_updates
+from core_helpers.utils import print_welcome
+
+try:
+    from importlib import metadata
+except ImportError:  # for Python < 3.8
+    import importlib_metadata as metadata  # type: ignore
 
 
 def create_logger(package, log_file, debug, use_loguru) -> None:
@@ -96,6 +102,14 @@ def test_updates() -> None:
 
 def main() -> None:
     install(show_locals=False)
+
+    __package__: str = "core_helpers"
+
+    version: str = metadata.version(__package__)
+    desc: str = metadata.metadata(__package__)["Summary"]
+    repo: str = metadata.metadata(__package__)["Home-page"]
+
+    print_welcome(__package__, version, desc, repo, random_font=True)
 
     args: Namespace = test_parser()
 
