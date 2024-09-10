@@ -1,6 +1,7 @@
 import itertools
 import logging
 from argparse import Namespace
+from pathlib import Path
 
 from rich import print
 from rich.traceback import install
@@ -9,6 +10,7 @@ from core_helpers.cli import ArgparseColorThemes, setup_parser
 from core_helpers.logs import setup_logger
 from core_helpers.updates import check_updates
 from core_helpers.utils import print_welcome
+from core_helpers.xdg_paths import APP_DIRS, HOME_DIRS, get_user_path
 
 try:
     from importlib import metadata
@@ -48,16 +50,11 @@ def test_logger() -> None:
     package = "MyApp"
     log_file = "myapp.log"
 
-    create_logger(package, log_file, True, False)
-    create_logger(package, log_file, False, False)
-
-    return
-
     for bool1, bool2 in itertools.product([True, False], repeat=2):
         create_logger(package, log_file, bool1, bool2)
 
 
-def test_parser() -> Namespace:
+def test_parser() -> None:
     parser, g_main = setup_parser(
         "MyApp",
         "MyApp description",
@@ -77,8 +74,6 @@ def test_parser() -> Namespace:
     args: Namespace = parser.parse_args()
 
     parser.print_help()
-
-    return args
 
 
 def test_updates() -> None:
@@ -100,6 +95,15 @@ def test_updates() -> None:
         print()
 
 
+def test_xdg_paths() -> None:
+    for path_type in APP_DIRS:
+        path: Path = get_user_path(__package__, path_type)
+        print(f"{path_type}: {path}")
+    for path_type in HOME_DIRS:
+        path = get_user_path(__package__, path_type)
+        print(f"{path_type}: {path}")
+
+
 def main() -> None:
     install(show_locals=False)
 
@@ -111,10 +115,10 @@ def main() -> None:
 
     print_welcome(__package__, version, desc, repo, random_font=True)
 
-    args: Namespace = test_parser()
-
+    test_parser()
     test_logger()
     test_updates()
+    test_xdg_paths()
 
 
 if __name__ == "__main__":
