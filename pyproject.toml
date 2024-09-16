@@ -1,9 +1,9 @@
 [tool.poetry]
 name = "core-helpers"
-version = "1.0.0"
+version = "1.1.0"
 description = "A collection of helper functions for all your python projects"
 license = "GPL-3.0-only"
-authors = ["YisusChrist <alejandro.gonzalezm02@estudiante.uam.es>"]
+authors = ["YisusChrist <agelrenorenardo@gmail.com>"]
 readme = "README.md"
 repository = "https://github.com/YisusChrist/core_helpers"
 
