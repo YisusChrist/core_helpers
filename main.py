@@ -87,6 +87,7 @@ def test_updates() -> None:
         "https://git.cryto.net/joepie91/box",
         "https://gitee.com/LongbowEnterprise/BootstrapBlazor",
         "https://gitee.com/cxasm/notepad--",
+        "https://example.com/gitee.com"
     ]
 
     for url in urls:

@@ -1,11 +1,23 @@
 import re
 from typing import Optional
+from urllib.parse import urlparse
 
 import requests
 from packaging.version import InvalidVersion, Version
 from rich import print
 
 MAX_TIMEOUT = 10
+
+"""
+# TODO: Try to use semver library to compare versions
+import semver
+
+
+latest_version = response.json()["tag_name"]
+
+if semver.compare(latest_version, VERSION) > 0:
+    # update detected...
+"""
 
 
 def _get_latest_release_version(repo_url: str, is_gitlab: bool = False) -> str | None:
@@ -100,19 +112,23 @@ def _get_latest_tag_version(repo_url: str) -> str | None:
         return None
 
 
-def _get_gitlab_project_id(gitlab_url: str) -> int | None:
+def _get_gitlab_project_id(api_url: str, gitlab_url: str) -> str | None:
     """
     Retrieve the GitLab project ID based on the given URL.
 
     Args:
+        api_url (str): The base URL of the GitLab API.
         gitlab_url (str): The URL of the GitLab project.
 
     Returns:
         int | None: The project ID if found, else None.
     """
-    api_url = f"https://gitlab.com/api/v4/projects/{gitlab_url}"
+    gitlab_project_path: str = gitlab_url.split("https://gitlab.com/")[1].replace(
+        "/", "%2F"
+    )
+    request_url: str = f"{api_url}/{gitlab_project_path}"
     try:
-        response: requests.Response = requests.get(api_url, timeout=MAX_TIMEOUT)
+        response: requests.Response = requests.get(request_url, timeout=MAX_TIMEOUT)
         response.raise_for_status()
         return response.json().get("id")
     except requests.exceptions.RequestException:
@@ -140,6 +156,45 @@ def _is_newer_version(local_version: str, remote_version: str) -> bool:
         return remote_version > local_version
 
 
+def _get_api_base_and_project_id(git_url: str) -> tuple[str, str, bool]:
+    """
+    Extract the API base URL and project ID from the Git URL.
+
+    Args:
+        git_url (str): The URL of the Git repository.
+
+    Returns:
+        tuple[str, str, bool]: The API base URL, project ID, and whether the repository is GitLab.
+    """
+    api_base: str = ""
+    project_id: str | None = ""
+    is_gitlab = False
+
+    host: str | None = urlparse(git_url).hostname
+    match host:
+        case "github.com":
+            api_base = "https://api.github.com/repos"
+            project_id = git_url.split("https://github.com/")[1]
+        case "gitlab.com":
+            is_gitlab = True
+            api_base = "https://gitlab.com/api/v4/projects"
+            project_id = _get_gitlab_project_id(api_base, git_url)
+            if not project_id:
+                print("[red]ERROR[/]: Could not retrieve the GitLab project ID.")
+                return "", "", False
+        case "gitee.com":
+            api_base = "https://gitee.com/api/v5/repos"
+            project_id = git_url.split("https://gitee.com/")[1]
+        case "codeberg.org" | "gitea.com" | "gitea.angry.im" | "git.cryto.net":
+            api_base = f"https://{host}/api/v1/repos"
+            project_id = git_url.split(f"https://{host}/")[1]
+        case _:
+            print("[red]ERROR[/]: Unsupported platform.")
+            return "", "", False
+
+    return api_base, project_id, is_gitlab
+
+
 def check_updates(git_url: str, current_version: str) -> None:
     """
     Check if there is a newer version of the script available in the Git repository.
@@ -157,46 +212,10 @@ def check_updates(git_url: str, current_version: str) -> None:
         git_url (str): The URL of the Git repository.
         current_version (str): The current version of the script.
     """
-    if git_url.endswith(".git"):
-        git_url = git_url[:-4]
-    if git_url.endswith("/"):
-        git_url = git_url[:-1]
-
-    project_id: str = ""
-    is_gitlab = False
-
-    if "github.com" in git_url:
-        api_base = "https://api.github.com/repos"
-        project_id = git_url.split("https://github.com/")[1]
-    elif "gitlab.com" in git_url:
-        is_gitlab = True
-        api_base = "https://gitlab.com/api/v4/projects"
-        gitlab_project_path: str = git_url.split("https://gitlab.com/")[1].replace(
-            "/", "%2F"
-        )
-        gitlab_project_id: int | None = _get_gitlab_project_id(gitlab_project_path)
-        if not gitlab_project_id:
-            print("[red]ERROR[/]: Could not retrieve the GitLab project ID.")
-            return
-
-        project_id = str(gitlab_project_id)
-    elif "codeberg.org" in git_url:
-        api_base = "https://codeberg.org/api/v1/repos"
-        project_id = git_url.split("https://codeberg.org/")[1]
-    elif "gitea.com" in git_url:
-        api_base = "https://gitea.com/api/v1/repos"
-        project_id = git_url.split("https://gitea.com/")[1]
-    elif "gitea.angry.im" in git_url:
-        api_base = "https://gitea.angry.im/api/v1/repos"
-        project_id = git_url.split("https://gitea.angry.im/")[1]
-    elif "git.cryto.net" in git_url:
-        api_base = "https://git.cryto.net/api/v1/repos"
-        project_id = git_url.split("https://git.cryto.net/")[1]
-    elif "gitee.com" in git_url:
-        api_base = "https://gitee.com/api/v5/repos"
-        project_id = git_url.split("https://gitee.com/")[1]
-    else:
-        print("[red]ERROR[/]: Unsupported platform.")
+    # Remove trailing slashes and '.git' from the URL
+    git_url = git_url.rstrip("/").removesuffix(".git")
+    api_base, project_id, is_gitlab = _get_api_base_and_project_id(git_url)
+    if not project_id:
         return
 
     release_url: str = f"{api_base}/{project_id}/releases/latest"
