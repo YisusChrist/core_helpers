@@ -1,10 +1,15 @@
 import os
 import random
 import re
+import sys
+from pathlib import Path
 from typing import Optional
 
 import pyfiglet  # type: ignore
 from rich import print
+
+from core_helpers.consts import EXIT_FAILURE
+from core_helpers.rich_print import print_error_message
 
 
 def _strip_rich_tags(text: str) -> str:
@@ -74,3 +79,24 @@ def print_welcome(
     print(desc.center(width + len(desc) - len(visible_desc)))
     print(repo.center(width + len(repo) - len(visible_repo)))
     print()
+
+
+def exit_session(exit_value: int, log_path: str | Path) -> None:
+    """
+    Exit the program with the given exit value.
+
+    Args:
+        exit_value (int): The POSIX exit value to exit with.
+    """
+    # Check if the exit_value is a valid POSIX exit value
+    if not 0 <= exit_value <= 255:
+        exit_value = EXIT_FAILURE
+
+    if exit_value == EXIT_FAILURE:
+        print_error_message(
+            "\nThere were errors during the execution of the script. "
+            f"Check the logs at [green]'{log_path}'[/] for more information."
+        )
+
+    # Exit the program with the given exit value
+    sys.exit(exit_value)
