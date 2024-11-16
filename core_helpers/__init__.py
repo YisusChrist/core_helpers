@@ -1,5 +1,7 @@
 from core_helpers.cli import ArgparseColorThemes, setup_parser
 from core_helpers.logs import setup_logger
+from core_helpers.rich_print import (print_error_message, print_info_message,
+                                     print_warning_message)
 from core_helpers.updates import check_updates
 from core_helpers.utils import print_welcome
 from core_helpers.xdg_paths import get_user_path
