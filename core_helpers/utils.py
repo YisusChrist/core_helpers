@@ -3,7 +3,7 @@ import random
 import re
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import NoReturn, Optional
 
 import pyfiglet  # type: ignore
 from rich import print
@@ -81,7 +81,7 @@ def print_welcome(
     print()
 
 
-def exit_session(exit_value: int, log_path: str | Path) -> None:
+def exit_session(exit_value: int, log_path: str | Path) -> NoReturn:
     """
     Exit the program with the given exit value.
 
