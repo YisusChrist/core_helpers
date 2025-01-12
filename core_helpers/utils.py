@@ -1,10 +1,14 @@
 import os
 import random
 import re
-from typing import Optional
+import sys
+from pathlib import Path
+from typing import NoReturn, Optional
 
 import pyfiglet  # type: ignore
 from rich import print
+
+from .consts import BaseConfig
 
 
 def _strip_rich_tags(text: str) -> str:
@@ -74,3 +78,24 @@ def print_welcome(
     print(desc.center(width + len(desc) - len(visible_desc)))
     print(repo.center(width + len(repo) - len(visible_repo)))
     print()
+
+
+def exit_session(exit_value: int, log_path: str | Path) -> NoReturn:
+    """
+    Exit the program with the given exit value.
+
+    Args:
+        exit_value (int): The POSIX exit value to exit with.
+    """
+    # Check if the exit_value is a valid POSIX exit value
+    if not 0 <= exit_value <= 255:
+        exit_value = BaseConfig.EXIT_FAILURE
+
+    if exit_value == BaseConfig.EXIT_FAILURE:
+        print(
+            "\nThere were errors during the execution of the script. "
+            f"Check the logs at [green]'{log_path}'[/] for more information."
+        )
+
+    # Exit the program with the given exit value
+    sys.exit(exit_value)
