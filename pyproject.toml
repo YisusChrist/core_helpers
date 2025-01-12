@@ -19,12 +19,14 @@ rich-argparse-plus = "^0.3.1.4"
 typeguard = "^4.3.0"
 
 [tool.poetry.group.dev.dependencies]
-types-requests = "^2.32.0.20240712"
-pylint = "^3.2.6"
-mypy = "^1.11.2"
 bandit = "^1.7.9"
+mypy = "^1.11.2"
 pydoctest = "^0.2.1"
+pylint = "^3.2.6"
 pytest = "^8.3.2"
+
+[tool.poetry.group.types.dependencies]
+types-requests = "^2.32.0.20240712"
 
 [build-system]
 requires = ["poetry-core"]
