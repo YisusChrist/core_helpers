@@ -7,18 +7,21 @@ authors = [{ name = "YisusChrist", email = "agelrenorenardo@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-  "loguru>=0.7.2",
   "packaging>=24.1",
   "platformdirs>=4.3.2",
   "pyfiglet>=1.0.2",
   "requests>=2.32.3",
   "rich-argparse-plus>=0.3.1.4",
   "rich>=13.7.1",
-  "typeguard>=4.3.0",
 ]
 
 [project.urls]
 repository = "https://github.com/YisusChrist/core_helpers"
+
+[project.optional-dependencies]
+logging = ["loguru>=0.7.2"]
+runtime-checks = ["typeguard>=4.3.0"]
+all = ["loguru>=0.7.2", "typeguard>=4.3.0"]
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.9"
