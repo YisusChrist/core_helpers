@@ -70,7 +70,12 @@ class LoggerProxy:
             debug (bool): Whether to enable debug-level logging.
             verbose (bool): Whether to enable verbose logging.
         """
-        from loguru import logger as loguru_logger
+        try:
+            from loguru import logger as loguru_logger
+        except ImportError:
+            raise ImportError(
+                "Loguru is not installed. Please install it with 'core-helpers[logging]'."
+            )
 
         # Loguru configuration
         loguru_logger.remove()  # Remove default configuration
