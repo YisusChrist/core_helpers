@@ -2,42 +2,76 @@
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-import loguru
-from loguru import logger as loguru_logger
+if TYPE_CHECKING:
+    from loguru import Logger
+
 from typeguard import typechecked
 
-# Cache the logger instance
-_cached_logger: logging.Logger | loguru._Logger = None  # type: ignore
 
-
-@typechecked
-def setup_logger(
-    package: str,
-    log_file: str | Path,
-    debug: bool = False,
-    use_loguru: bool = False,
-    no_cache: bool = False,
-) -> logging.Logger | loguru._Logger:  # type: ignore
+class LoggerProxy:
     """
-    Set up and return a configured logger instance using either `logging` or `loguru`.
+    A proxy class for logging.Logger or loguru.Logger.
 
-    Args:
-        package (str): The name of the package or project.
-        log_file (str | Path): The path to the log file.
-        debug (bool): Whether to enable debug-level logging.
-        use_loguru (bool): Whether to use `loguru` instead of the standard `logging` module.
-        no_cache (bool): Whether to bypass the cached logger instance.
-
-    Returns:
-        Optional[logging.Logger]: The configured logger instance (only if using `logging`).
+    This class allows for a unified interface to access either standard logging
+    or Loguru logging. It supports lazy initialization and caching of the
+    logger instance.
     """
-    global _cached_logger
 
-    if _cached_logger is not None and not no_cache:
-        return _cached_logger
+    def __init__(self) -> None:
+        self._logger: logging.Logger | Logger | None = None
 
-    if use_loguru:
+    def is_initialized(self) -> bool:
+        """
+        Check if the logger has been initialized.
+
+        Returns:
+            bool: True if the logger is initialized, False otherwise.
+        """
+        return self._logger is not None
+
+    @typechecked
+    def setup_logger(
+        self,
+        package: str,
+        log_file: str | Path,
+        debug: bool = False,
+        verbose: bool = False,
+        use_loguru: bool = False,
+        cache: bool = True,
+    ) -> None:
+        """
+        Set up a configured logger instance using either `logging` or `loguru`.
+
+        Args:
+            package (str): The name of the package or project.
+            log_file (str | Path): The path to the log file.
+            debug (bool): Whether to enable debug-level logging.
+            verbose (bool): Whether to enable verbose logging.
+            use_loguru (bool): Whether to use `loguru` instead of the standard `logging` module.
+            cache (bool): Whether to use the cached logger instance.
+        """
+        if use_loguru:
+            # Use Loguru for logging
+            self._set_loguru_logger(log_file, debug, verbose)
+        else:
+            # Use standard logging
+            self._set_logging_logger(package, log_file, debug, verbose, cache)
+
+    def _set_loguru_logger(
+        self, log_file: str | Path, debug: bool, verbose: bool
+    ) -> None:
+        """
+        Set up and return a configured Loguru logger instance.
+
+        Args:
+            log_file (str | Path): The path to the log file.
+            debug (bool): Whether to enable debug-level logging.
+            verbose (bool): Whether to enable verbose logging.
+        """
+        from loguru import logger as loguru_logger
+
         # Loguru configuration
         loguru_logger.remove()  # Remove default configuration
         loguru_log_level: str = "DEBUG" if debug else "INFO"
@@ -47,26 +81,45 @@ def setup_logger(
             log_file, level=loguru_log_level, format="{time} {level} {message}"
         )
 
-        # Configure Loguru to log to console
-        loguru_logger.add(
-            lambda msg: print(msg, end=""), level=loguru_log_level, colorize=True
-        )
+        if verbose:
+            # Configure Loguru to log to console
+            loguru_logger.add(
+                lambda msg: print(msg, end=""), level=loguru_log_level, colorize=True
+            )
 
-        _cached_logger = loguru_logger
-        return loguru_logger
+        self._logger = loguru_logger
 
-    else:
+    def _set_logging_logger(
+        self,
+        package: str,
+        log_file: str | Path,
+        debug: bool,
+        verbose: bool,
+        cache: bool,
+    ) -> None:
+        """
+        Set up and return a configured standard logging logger instance.
+
+        Args:
+            package (str): The name of the package or project.
+            log_file (str | Path): The path to the log file.
+            debug (bool): Whether to enable debug-level logging.
+            verbose (bool): Whether to enable verbose logging.
+            cache (bool): Whether to use the cached logger instance.
+        """
         # Standard logging configuration
         logger: logging.Logger = logging.getLogger(name=package)
-        if logger.hasHandlers() and no_cache:
+        logger.propagate = False  # Prevent propagation to root logger
+
+        if logger.hasHandlers() and not cache:
             # Remove existing handlers
             logger.handlers.clear()
 
         if not logger.hasHandlers():  # Prevent adding handlers multiple times
             # Define log handlers
-            log_handlers: list[logging.FileHandler] = [
-                logging.FileHandler(filename=log_file)
-            ]
+            log_handlers = [logging.FileHandler(filename=log_file)]
+            if verbose:
+                log_handlers.append(logging.StreamHandler())
 
             # Set the log level and message format
             log_level: int = logging.DEBUG if debug else logging.INFO
@@ -78,10 +131,6 @@ def setup_logger(
 
             formatter = logging.Formatter(log_format)
 
-            # Clear existing handlers
-            if logger.hasHandlers():
-                logger.handlers.clear()
-
             # Set the log level
             logger.setLevel(log_level)
 
@@ -91,5 +140,24 @@ def setup_logger(
                 handler.setLevel(log_level)
                 logger.addHandler(handler)
 
-        _cached_logger = logger
-        return logger
+        self._logger = logger
+
+    def __getattr__(self, name: str):
+        """
+        Proxy attribute access to the underlying logger.
+
+        Args:
+            name (str): The name of the attribute to access.
+
+        Raises:
+            RuntimeError: If the logger has not been initialized.
+        """
+        if self._logger is None:
+            raise RuntimeError(
+                f"logging.Logger accessed before initialization: tried to use '{name}'"
+            )
+        return getattr(self._logger, name)
+
+
+# Create a shared proxy
+logger: LoggerProxy = LoggerProxy()
