@@ -1,22 +1,24 @@
-[tool.poetry]
+[project]
 name = "core-helpers"
 version = "1.2.0"
 description = "A collection of helper functions for all your python projects"
 license = "GPL-3.0-only"
-authors = ["YisusChrist <agelrenorenardo@gmail.com>"]
+authors = [{ name = "YisusChrist", email = "agelrenorenardo@gmail.com" }]
 readme = "README.md"
-repository = "https://github.com/YisusChrist/core_helpers"
+requires-python = ">=3.9"
+dependencies = [
+  "loguru>=0.7.2",
+  "packaging>=24.1",
+  "platformdirs>=4.3.2",
+  "pyfiglet>=1.0.2",
+  "requests>=2.32.3",
+  "rich-argparse-plus>=0.3.1.4",
+  "rich>=13.7.1",
+  "typeguard>=4.3.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-loguru = "^0.7.2"
-packaging = "^24.1"
-platformdirs = "^4.3.2"
-pyfiglet = "^1.0.2"
-requests = "^2.32.3"
-rich = "^13.7.1"
-rich-argparse-plus = "^0.3.1.4"
-typeguard = "^4.3.0"
+[project.urls]
+repository = "https://github.com/YisusChrist/core_helpers"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.9"
