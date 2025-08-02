@@ -7,7 +7,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from loguru import Logger
 
-from typeguard import typechecked
+try:
+    from typeguard import typechecked
+except ImportError:
+    # Fallback for type checking if typeguard is not installed
+    typechecked = lambda x: x
 
 
 class LoggerProxy:
