@@ -1,40 +1,38 @@
 import logging
 from pathlib import Path
-from typing import Generator
 
 import loguru
 import pytest
 from typeguard import TypeCheckError
 
-from core_helpers.logs import setup_logger
+from core_helpers.logs import LoggerProxy
 
 PACKAGE = "MyApp"
+LOG_FILE = Path(PACKAGE + ".log")
 
 
 @pytest.fixture
-def temp_log_file() -> Generator[Path, None, None]:
-    # Create a temporary log file
-    log_file = Path("temp_test_log.log")
-    yield log_file
-    # if log_file.exists():
-    #    log_file.unlink()  # This safely removes the file after the test
+def temp_log_file(tmp_path: Path) -> Path:
+    return tmp_path / "temp_test_log.log"
 
 
 def test_setup_logger_standard(temp_log_file: Path) -> None:
-    logger = setup_logger(
-        PACKAGE, temp_log_file, debug=True, use_loguru=False, no_cache=True
+    logger: LoggerProxy = LoggerProxy()
+    logger.setup_logger(
+        PACKAGE, temp_log_file, debug=True, use_loguru=False, cache=False
     )
-    assert isinstance(logger, logging.Logger)
+    assert isinstance(logger._logger, logging.Logger)
 
     logger.info("Testing standard logger")
     assert temp_log_file.exists()
 
 
 def test_setup_logger_loguru(temp_log_file: Path) -> None:
-    logger = setup_logger(
-        PACKAGE, temp_log_file, debug=True, use_loguru=True, no_cache=True
+    logger: LoggerProxy = LoggerProxy()
+    logger.setup_logger(
+        PACKAGE, temp_log_file, debug=True, use_loguru=True, cache=False
     )
-    assert isinstance(logger, loguru._Logger)  # type: ignore
+    assert isinstance(logger._logger, loguru._Logger)  # type: ignore
 
     logger.info("Testing Loguru logger")
     assert temp_log_file.exists()
@@ -42,106 +40,117 @@ def test_setup_logger_loguru(temp_log_file: Path) -> None:
 
 def test_setup_logger_cached_instance(temp_log_file: Path) -> None:
     # First logger instance
-    logger1 = setup_logger(
-        PACKAGE, temp_log_file, debug=True, use_loguru=False, no_cache=False
+    logger: LoggerProxy = LoggerProxy()
+    logger.setup_logger(
+        PACKAGE, temp_log_file, debug=True, use_loguru=False, cache=True
     )
-    # Cached instance should be returned
-    logger2 = setup_logger(
-        PACKAGE, temp_log_file, debug=True, use_loguru=False, no_cache=False
+    logger1: LoggerProxy = logger._logger
+    logger.setup_logger(
+        PACKAGE, temp_log_file, debug=True, use_loguru=False, cache=True
     )
+    logger2: LoggerProxy = logger._logger
 
     assert logger1 is logger2  # Check if the cached instance is reused
 
 
 def test_setup_logger_no_cache(temp_log_file: Path) -> None:
-    logger1 = setup_logger(
-        PACKAGE, temp_log_file, debug=True, use_loguru=False, no_cache=True
+    logger1: LoggerProxy = LoggerProxy()
+    logger1.setup_logger(
+        PACKAGE, temp_log_file, debug=True, use_loguru=False, cache=False
     )
-    logger2 = setup_logger(
-        PACKAGE, temp_log_file, debug=True, use_loguru=False, no_cache=True
+    logger2: LoggerProxy = LoggerProxy()
+    logger2.setup_logger(
+        PACKAGE, temp_log_file, debug=True, use_loguru=False, cache=False
     )
 
-    assert logger1 is not logger2  # Ensure no_cache=True forces a new instance
+    assert logger1 is not logger2  # Ensure cache=False forces a new instance
 
 
 def test_setup_logger_invalid_PACKAGE_name(temp_log_file: Path) -> None:
+    logger: LoggerProxy = LoggerProxy()
     with pytest.raises(TypeCheckError):
-        setup_logger(
+        logger.setup_logger(
             None,  # type: ignore
             temp_log_file,
             debug=True,
             use_loguru=False,
-            no_cache=True,
+            cache=False,
         )
 
 
 def test_setup_logger_invalid_log_file_type() -> None:
+    logger: LoggerProxy = LoggerProxy()
     with pytest.raises(TypeCheckError):
-        setup_logger(
+        logger.setup_logger(
             PACKAGE,
             12345,  # type: ignore
             debug=True,
             use_loguru=False,
-            no_cache=True,
+            cache=False,
         )
 
 
 def test_setup_logger_invalid_debug_type(temp_log_file: Path) -> None:
+    logger: LoggerProxy = LoggerProxy()
     with pytest.raises(TypeCheckError):
-        setup_logger(
+        logger.setup_logger(
             PACKAGE,
             temp_log_file,
             debug="not_a_bool",  # type: ignore
             use_loguru=False,
-            no_cache=True,
+            cache=False,
         )
 
 
 def test_setup_logger_invalid_use_loguru_type(temp_log_file: Path) -> None:
+    logger: LoggerProxy = LoggerProxy()
     with pytest.raises(TypeCheckError):
-        setup_logger(
+        logger.setup_logger(
             PACKAGE,
             temp_log_file,
             debug=True,
             use_loguru=[],  # type: ignore
-            no_cache=True,
+            cache=False,
         )
 
 
-def test_setup_logger_invalid_no_cache_type(temp_log_file: Path) -> None:
+def test_setup_logger_invalid_cache_type(temp_log_file: Path) -> None:
+    logger: LoggerProxy = LoggerProxy()
     with pytest.raises(TypeCheckError):
-        setup_logger(
+        logger.setup_logger(
             PACKAGE,
             temp_log_file,
             debug=True,
             use_loguru=False,
-            no_cache="invalid",  # type: ignore
+            cache="invalid",  # type: ignore
         )
 
 
 def test_setup_logger_no_handlers(temp_log_file: Path) -> None:
-    logger = setup_logger(
-        PACKAGE, temp_log_file, debug=False, use_loguru=False, no_cache=True
+    logger: LoggerProxy = LoggerProxy()
+    logger.setup_logger(
+        PACKAGE, temp_log_file, debug=False, use_loguru=False, cache=False
     )
-    assert isinstance(logger, logging.Logger)
+    assert isinstance(logger._logger, logging.Logger)
 
     # logger.handlers.clear()  # Manually clear handlers
 
-    logger = setup_logger(
-        PACKAGE, temp_log_file, debug=False, use_loguru=False, no_cache=True
+    logger.setup_logger(
+        PACKAGE, temp_log_file, debug=False, use_loguru=False, cache=False
     )
-    assert len(logger.handlers) == 1  # Ensure handler is re-added
+    assert len(logger._logger.handlers) == 1  # Ensure handler is re-added
 
 
 def test_setup_logger_loguru_reconfiguration(temp_log_file: Path) -> None:
-    logger = setup_logger(
-        PACKAGE, temp_log_file, debug=True, use_loguru=True, no_cache=True
+    logger: LoggerProxy = LoggerProxy()
+    logger.setup_logger(
+        PACKAGE, temp_log_file, debug=True, use_loguru=True, cache=False
     )
     logger.info("First configuration")
 
     # Reconfigure Loguru logger with a different setting
-    logger = setup_logger(
-        PACKAGE, temp_log_file, debug=False, use_loguru=True, no_cache=True
+    logger.setup_logger(
+        PACKAGE, temp_log_file, debug=False, use_loguru=True, cache=False
     )
     logger.info("Second configuration")
 

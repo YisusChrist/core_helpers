@@ -7,7 +7,6 @@ from rich import print
 from rich.traceback import install
 
 from core_helpers.cli import ArgparseColorThemes, setup_parser
-from core_helpers.logs import setup_logger
 from core_helpers.rich_print import print_error_message
 from core_helpers.updates import check_updates
 from core_helpers.utils import print_welcome
@@ -19,16 +18,18 @@ except ImportError:  # for Python < 3.8
     import importlib_metadata as metadata  # type: ignore
 
 
-def create_logger(package, log_file, debug, use_loguru) -> None:
+__package__ = "core_helpers"
+LOG_FILE: Path = Path.cwd() / f"{__package__}.log"
+
+
+def create_logger(debug, use_loguru) -> None:
+    from core_helpers.logs import logger
+
     print(
-        f"Creating logger with package={package}, log_file={log_file}, debug={debug}, use_loguru={use_loguru}..."
+        f"Creating logger with package={__package__}, log_file={LOG_FILE}, debug={debug}, use_loguru={use_loguru}..."
     )
-    logger = setup_logger(
-        package=package,
-        log_file=log_file,
-        debug=debug,
-        use_loguru=use_loguru,
-        no_cache=True,
+    logger.setup_logger(
+        __package__, LOG_FILE, debug, use_loguru=use_loguru, cache=False
     )
 
     logger_level = logger.level if isinstance(logger, logging.Logger) else None
@@ -48,11 +49,8 @@ def create_logger(package, log_file, debug, use_loguru) -> None:
 
 
 def test_logger() -> None:
-    package = "MyApp"
-    log_file = "myapp.log"
-
     for bool1, bool2 in itertools.product([True, False], repeat=2):
-        create_logger(package, log_file, bool1, bool2)
+        create_logger(bool1, bool2)
 
 
 def test_parser() -> None:
@@ -109,53 +107,26 @@ def test_xdg_paths() -> None:
 def main() -> None:
     install(show_locals=False)
 
-    __package__: str = "core_helpers"
-
+    metadata_info = metadata.metadata(__package__)
     version: str = metadata.version(__package__)
-    desc: str = metadata.metadata(__package__)["Summary"]
-    repo: str = metadata.metadata(__package__)["Home-page"]
+    desc: str = metadata_info.get("Summary")
+    repo: str = metadata_info.get("Home-page")
 
     print_welcome(__package__, version, desc, repo, random_font=True)
 
-    LOG_PATH = (
-        "C:\\Users\\yisus_christ\\AppData\\Local\\iltransfer\\iltransfer\\iltransfer.ini"
-    )
-
-    msg = (
+    msg: str = (
         "There were errors during the execution of the script. "
-        f"Check the logs at '{LOG_PATH}' for more information."
+        f"Check the logs at '{LOG_FILE}' for more information."
     )
 
     print(f"[red]ERROR[/]: {msg}")
     print()
     print_error_message(msg)
 
-    return
-
     test_parser()
     test_logger()
     test_updates()
     test_xdg_paths()
-
-
-def test_app() -> None:
-    # Step 1: Setup the parser
-    parser, _ = setup_parser(
-        AppConfig.PACKAGE,
-        "test description",  # AppConfig.desc(),
-        "0.0.1",  # AppConfig.version(),
-    )
-
-    # Step 2: Parse the arguments
-    args: Namespace = parser.parse_args()
-
-    # Step 3: Update AppConfig.DEBUG based on parsed arguments
-    if args.debug:
-        AppConfig.DEBUG = True
-
-    # Step 4: Proceed with the rest of the program (e.g., setting up logging)
-    # Now the AppConfig.DEBUG has been updated before setting up the logger
-    logger.info("Logger is set up.")
 
 
 if __name__ == "__main__":
