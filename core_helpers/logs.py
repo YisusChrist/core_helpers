@@ -126,7 +126,7 @@ class LoggerProxy:
 
         if not logger.hasHandlers():  # Prevent adding handlers multiple times
             # Define log handlers
-            log_handlers = [logging.FileHandler(filename=log_file)]
+            log_handlers = [logging.FileHandler(log_file, encoding="utf-8")]
             if verbose:
                 log_handlers.append(logging.StreamHandler())
 
